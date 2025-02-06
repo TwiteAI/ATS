@@ -1,0 +1,19 @@
+version: "3.8"  # or another version depending on your Docker Compose setup
+
+services:
+  mysql:
+    image: mysql:latest  # Use the official MySQL image
+    container_name: mysql_container_vaishnavi_test  # The name of your container
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345  # Set the root password
+      MYSQL_DATABASE: testdb  # The database to create
+      MYSQL_USER: root  # The user for the database
+      MYSQL_PASSWORD: testpassword  # The password for the user
+    ports:
+      - "3308:3306"  # Expose port 3308 on the host to MySQL container's 3306 port
+    command: --port=3308 --bind-address=0.0.0.0  # Configure MySQL to listen on port 3308
+    volumes:
+      - mysql_data:/var/lib/mysql  # Persistent data storage for MySQL
+
+volumes:
+  mysql_data:  # Define the named volume for MySQL data

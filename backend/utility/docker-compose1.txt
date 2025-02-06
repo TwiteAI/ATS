@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile  # Specifies the Dockerfile to use for building the image
+    volumes:
+      - .:/app  # Mount the current directory to /app inside the container
+    ports:
+      - "8000:8000"  # Exposes port 8000 of the container to port 8000 on the host
+    depends_on:
+      - db  # Wait for the database service to be ready
+
+  db:
+    image: mysql:5.7  # Use MySQL 5.7 image from Docker Hub
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345
+      MYSQL_DATABASE: my_database
+    ports:
+      - "3307:3306"  # Exposes MySQL's default port
+    volumes:
+      - mysql_data:/var/lib/mysql  # Persistent storage for the database
+
+volumes:
+  mysql_data:  # Defines a named volume for MySQL persistence
