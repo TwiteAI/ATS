@@ -13,16 +13,20 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Handle user login
-  const handleLogin = async (credentials: { email: string; password: string }) => {
+  const handleLogin = async (credentials: { email: string; password: string }): Promise<Response> => {
     try {
       const response = await login(credentials);
+  
       if (response.success) {
         setIsAuthenticated(true);
       } else {
         console.error('Login failed:', response.message);
       }
+  
+      return response;  // ✅ Now it explicitly returns a Response object
     } catch (error) {
       console.error('Login error:', error);
+      throw error; // Rethrow the error so it's handled properly
     }
   };
 
@@ -52,8 +56,11 @@ function App() {
       } else {
         console.error('Signup failed:', response.message);
       }
+  
+      return response;  // ✅ Now it explicitly returns a Response object
     } catch (error) {
       console.error('Signup error:', error);
+      throw error; // Rethrow the error so it's handled properly
     }
   };
   

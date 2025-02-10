@@ -11,7 +11,7 @@ interface SignupFormProps {
     phone: string;
     password: string;
     confirm_password: string;
-  }) => Promise<void>;
+  }) => Promise<Response>;
 }
 
 const SignupForm: React.FC<SignupFormProps> = ({ onSwitch, onSignupSuccess }) => {
@@ -26,6 +26,9 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitch, onSignupSuccess }) =>
   });
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -33,27 +36,42 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitch, onSignupSuccess }) =>
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    toast.dismiss();  // Remove any previous toasts
 
-    // Check if passwords match
     if (formData.password !== formData.confirm_password) {
+      setError('Passwords do not match!');
       toast.error('Passwords do not match!');
+      setLoading(false);
       return;
     }
-
-    setLoading(true);
-
+    
     try {
-      await onSignupSuccess({
+      const response = await onSignupSuccess({
         name: formData.name,
         email: formData.email,
         company_name: formData.company_name,
         job_title: formData.job_title,
         phone: formData.phone,
         password: formData.password,
-        confirm_password: formData.confirm_password // Send only password
+        confirm_password: formData.confirm_password,
       });
-      toast.success('Signup successful!');
-    } catch (error) {
+
+      if (response.status === 406) {
+        const data = await response.json();
+        setError(data.detail || 'User already exists!');
+        toast.error(data.detail || 'User already exists!');
+      } else if (response.ok) {
+        setSuccess('Signup successful!');
+        toast.success('Signup successful!');
+      } else {
+        throw new Error('Signup failed. Please try again.');
+      }
+
+    } catch (error:any) {
+      setError(error.message);
       toast.error('Error signing up, please try again!');
       console.error('Signup error:', error);
     } finally {
@@ -77,6 +95,9 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitch, onSignupSuccess }) =>
           {loading ? 'Signing Up...' : 'Sign Up'}
         </button>
       </form>
+
+      {error && <p style={{ color: "red" }}>{error}</p>}   {/* ✅ Display backend error */}
+      {success && <p style={{ color: "green" }}>{success}</p>} {/* ✅ Display success */}
 
       <p className="mt-4 text-gray-600">
         Already have an account?{' '}

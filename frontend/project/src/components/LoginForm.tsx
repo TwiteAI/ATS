@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 
 interface LoginFormProps {
   onSwitch: () => void;
-  onLoginSuccess: (credentials: { email: string; password: string }) => Promise<void>; // Accepts credentials
+  onLoginSuccess: (credentials: { email: string; password: string }) => Promise<Response>; // Accepts credentials
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onSwitch, onLoginSuccess }) => {
