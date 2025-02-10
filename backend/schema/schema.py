@@ -6,6 +6,7 @@ class SignupBody(BaseModel):
     username: str = Field(..., description="Username is required")
     password: str = Field(..., min_length=8, max_length=20, description="Password must be 8-20 characters long")
     confirm_password: str = Field(..., min_length=8, max_length=20, description="Passwords must match")
+    company_name:Optional[str]
     email: EmailStr
     role: str
     phone: Optional[str] = None

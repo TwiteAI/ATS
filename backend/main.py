@@ -26,14 +26,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.post("/candidates/userSignup")
+@app.post("/signup")
 def new_user_signup(user_data:SignupBody):
     user_data=user_data.model_dump()
     logger.info(type(user_data))
     result=user_signup_logic(user_data)
     return result
 
-@app.post("/candidates/userLogin")
+@app.post("/login")
 def user_login(user_input:LoginBody):
     user_input=user_input.model_dump()
     logger.info(type(user_input))
