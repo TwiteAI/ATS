@@ -59,25 +59,40 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitch, onSignupSuccess }) =>
         confirm_password: formData.confirm_password,
       });
 
-      if (response.status === 406) {
-        const data = await response.json();
-        setError(data.detail || 'User already exists!');
-        toast.error(data.detail || 'User already exists!');
-      } else if (response.ok) {
-        setSuccess('Signup successful!');
-        toast.success('Signup successful!');
-      } else {
-        throw new Error('Signup failed. Please try again.');
-      }
+      const responseData = await response.json();
 
-    } catch (error:any) {
-      setError(error.message);
-      toast.error('Error signing up, please try again!');
-      console.error('Signup error:', error);
-    } finally {
+        // ✅ Handle different HTTP status codes properly
+        if (!response.ok) {
+          if (response.status === 406) {
+              setError(responseData.detail || "User already exists!");
+              toast.error(responseData.detail || "User already exists!");
+          } 
+          // ✅ Handle FastAPI validation errors (422 - Unprocessable Entity)
+          else if (response.status === 422 && responseData.detail) {
+              const errorMessages: string[] = responseData.detail.map((err: any) => err.msg); // Extract actual error messages
+              const formattedError = errorMessages.join(", "); // Combine errors into a single string
+
+              setError(formattedError); // Show errors inside the UI
+              errorMessages.forEach((msg: string) => toast.error(msg)); // ✅ Explicitly define 'msg' as a string
+          } 
+          else {
+              setError(responseData.detail || "Signup failed. Please try again.");
+              toast.error(responseData.detail || "Signup failed. Please try again.");
+          }
+      } else {
+          setSuccess("Signup successful!");
+          toast.success("Signup successful!");
+      }
+  } catch (error: any) {
+      setError(error.message || "Unknown error occurred");
+      toast.error(error.message || "Error signing up, please try again!");
+      console.error("Signup error:", error);
+  } finally {
       setLoading(false);
-    }
-  };
+  }
+};
+
+
 
   return (
     <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">

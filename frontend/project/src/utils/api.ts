@@ -27,10 +27,14 @@ const API_BASE_URL = 'http://localhost:8000'; // Removed extra "http://"
 export const login = async (credentials: LoginCredentials): Promise<any> => {
   try {
     const response = await axios.post(`${API_BASE_URL}/login`, credentials);
-    return response.data;
-  } catch (error) {
-    console.error('Login failed:', error);
-    throw error;
+    return response.data; // If login is successful
+  } catch (error: any) {
+    console.error('Login failed:', error.response?.data?.detail || error.message);
+    // Ensure meaningful errors are thrown
+    if (error.response) {
+      throw new Error(error.response.data.detail || 'Login failed. Please try again.');
+    }
+    throw new Error('Network error. Please check your connection.');
   }
 };
 
@@ -47,7 +51,7 @@ export const signup = async (userData: SignupData): Promise<any> => {
     console.error('Signup failed:', error.response?.data?.detail || error.message);
 
     // Ensure meaningful errors are thrown
-    if (error.response && error.response.data) {
+    if (error.response) {
       throw new Error(error.response.data.detail || 'Signup failed. Please try again.');
     }
     throw new Error('Network error. Please check your connection.');

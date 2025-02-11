@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI,HTTPException
 from pydantic import BaseModel,Field,EmailStr,field_validator,model_validator
 from typing import Optional
 
@@ -20,9 +20,17 @@ class SignupBody(BaseModel):
     @field_validator("phone")
     def validate_phone(cls, value: Optional[str]) -> Optional[str]:
         if value and (not value.isdigit() or len(value) != 10):
-            raise ValueError("Phone number must be exactly 10 digits.")
+            raise HTTPException(status_code=400, detail="Phone number must be exactly 10 digits.")
         return value
     
+    @field_validator("email")
+    def validate_email(cls, value: str) -> str:
+        """Ensure the email follows a valid format and domain rules (optional)."""
+        import re
+        email_regex = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+        if not re.match(email_regex, value):
+            raise HTTPException(status_code=400, detail="Invalid email format.")
+        return value
 
 class LoginBody(BaseModel):
     email:EmailStr

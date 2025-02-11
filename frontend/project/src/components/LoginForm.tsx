@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 
 interface LoginFormProps {
   onSwitch: () => void;
-  onLoginSuccess: (credentials: { email: string; password: string }) => Promise<Response>; // Accepts credentials
+  onLoginSuccess: (credentials: { email: string; password: string }) => Promise<any>; // Accepts credentials
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onSwitch, onLoginSuccess }) => {
@@ -13,6 +13,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitch, onLoginSuccess }) => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -21,13 +22,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitch, onLoginSuccess }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
+    toast.dismiss();
 
     try {
       await onLoginSuccess(formData); // Pass credentials
       toast.success('Login successful!');
-    } catch (error) {
-      toast.error('Error logging in, please try again!');
-      console.error('Login error:', error);
+    } catch (error:any) {
+      setError(error.message);
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }
@@ -40,6 +43,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitch, onLoginSuccess }) => {
         <input type="email" name="email" placeholder="Email" onChange={handleChange} required className="input" />
         <input type="password" name="password" placeholder="Password" onChange={handleChange} required className="input" />
 
+        {error && <div className="text-red-500 text-sm">{error}</div>} {/* Display error message */}
+        
         <button type="submit" className="btn-primary w-full" disabled={loading}>
           {loading ? 'Logging In...' : 'Login'}
         </button>
