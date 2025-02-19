@@ -21,7 +21,7 @@ def user_signup_logic(user_input):
     if password != confirm_password:
         raise HTTPException(status_code=400, detail="Passwords do not match")
 
-    existing_user = login_checker(username,email)
+    existing_user = existing_user_checker(username,email)
     logger.info(f"{len(existing_user)}")
 
     hashed_password=hash_password(password)

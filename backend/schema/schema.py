@@ -54,4 +54,10 @@ class UpdateBody(BaseModel):
     role:Optional[str]=""
     phone:Optional[str]=""
 
+class ForgotPasswordBody(BaseModel):
+    email:EmailStr
 
+class ResetPasswordBody(BaseModel):
+    email:EmailStr
+    passcode:str
+    new_password:str = Field(..., min_length=8, max_length=20, description="Password must be 8-20 characters long")

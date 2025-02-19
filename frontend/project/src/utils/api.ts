@@ -57,3 +57,23 @@ export const signup = async (userData: SignupData): Promise<any> => {
     throw new Error('Network error. Please check your connection.');
   }
 };
+
+/**
+ * Send password reset instructions
+ * @param email - User email address
+ * @returns A promise resolving to password reset response
+ */
+export const sendPasswordReset = async (email: string): Promise<any> => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/password-reset`, { email });
+    return response.data; // If password reset is successful
+  } catch (error: any) {
+    console.error('Password reset failed:', error.response?.data?.detail || error.message);
+
+    // Ensure meaningful errors are thrown
+    if (error.response) {
+      throw new Error(error.response.data.detail || 'Password reset failed. Please try again.');
+    }
+    throw new Error('Network error. Please check your connection.');
+  }
+};

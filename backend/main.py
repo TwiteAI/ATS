@@ -8,6 +8,8 @@ from signup.signup import *
 from update.update_details import *
 from get_candidates.get_candidates import *
 from delete.delete import *
+from forgot_password.forgot_password import *
+from forgot_password.reset_password import *
 import uvicorn
 from typing import List
 
@@ -40,6 +42,19 @@ def user_login(user_input:LoginBody):
     # call user_login logic here
     result=user_login_logic(user_input)
     return result
+
+@app.post("/forgot_password")
+async def forgot_password(forgot_password:ForgotPasswordBody):
+    forgot_password=forgot_password.model_dump()
+    logger.info(f'{forgot_password}')
+    return await forgot_password_logic(forgot_password)
+
+@app.put("/reset_password")
+def reset_password(reset_details: ResetPasswordBody):
+    reset_body = reset_details.model_dump()
+    logger.info(reset_body)
+    result = reset_password_logic(reset_body)
+    return result    
 
 @app.get("/candidates", response_model=List[CandidateSchema])
 def get_candidates(

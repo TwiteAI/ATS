@@ -1,14 +1,18 @@
 from database.mysql_reader_and_writer import *
 from loguru import logger
 
-def login_checker(username, email):
+def existing_user_checker(email,username=None):
     logger.info(mysql_connection_obj)
     
     logger.info("Checking for existing user in the database.")
-    
-    # Fetch both username and email
-    select_query = f"SELECT id, username, email FROM user_info WHERE username = '{username}' OR email = '{email}'"
-    rows = mysql_connection_obj.reader(select_query)
+
+    if username:
+        # Fetch both username and email
+        select_query = f"SELECT id, username, email FROM user_info WHERE username = '{username}' OR email = '{email}'"
+        rows = mysql_connection_obj.reader(select_query)
+    else:
+        select_query=f"SELECT id, username, email FROM user_info WHERE email = '{email}'"
+        rows = mysql_connection_obj.reader(select_query)
     
     logger.info(f'User Found : {rows}')
 
