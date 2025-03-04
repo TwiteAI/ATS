@@ -3,6 +3,7 @@ import { CircuitBoard } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import LoginForm from './components/LoginForm';
 import SignupForm from './components/SignupForm';
+import ForgotPassword from './components/ForgotPassword'; // Import ForgotPassword component
 import Dashboard from './components/Dashboard';
 import Navbar from './components/Navbar';
 import { CandidateProvider } from './context/CandidateContext';
@@ -10,6 +11,7 @@ import { login, signup } from './utils/api'; // Importing API functions
 
 function App() {
   const [showSignup, setShowSignup] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false); // Added state for Forgot Password
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Handle user login
@@ -23,16 +25,16 @@ function App() {
         console.error('Login failed:', response.message);
       }
   
-      return response;  // ✅ Now it explicitly returns a Response object
+      return response;
     } catch (error) {
       console.error('Login error:', error);
-      throw error; // Rethrow the error so it's handled properly
+      throw error;
     }
   };
 
   // Handle user signup
   const handleSignup = async (userData: {
-    name: string;  // Expecting 'name' from SignupForm
+    name: string;
     email: string;
     company_name: string;
     job_title: string;
@@ -42,10 +44,10 @@ function App() {
   }) => {
     try {
       const response = await signup({
-        username: userData.name,  // Map 'name' to 'username'
+        username: userData.name,
         email: userData.email,
         company_name: userData.company_name,
-        role: userData.job_title,  // Map 'job_title' to 'role'
+        role: userData.job_title,
         phone: userData.phone,
         password: userData.password,
         confirm_password: userData.confirm_password,
@@ -57,19 +59,17 @@ function App() {
         console.error('Signup failed:', response.message);
       }
   
-      return response;  // ✅ Now it explicitly returns a Response object
+      return response;
     } catch (error) {
       console.error('Signup error:', error);
-      throw error; // Rethrow the error so it's handled properly
+      throw error;
     }
   };
-  
 
   if (isAuthenticated) {
     return (
       <CandidateProvider>
         <div className="min-h-screen bg-[#020817] relative overflow-hidden">
-          {/* Wave Background */}
           <div
             className="absolute inset-0 z-0 opacity-30"
             style={{
@@ -92,7 +92,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#020817] relative overflow-hidden">
-      {/* Wave Background */}
       <div
         className="absolute inset-0 z-0 opacity-30"
         style={{
@@ -104,7 +103,6 @@ function App() {
         }}
       />
 
-      {/* Content */}
       <div className="relative z-10">
         {showSignup ? (
           <>
@@ -124,6 +122,8 @@ function App() {
               <SignupForm onSwitch={() => setShowSignup(false)} onSignupSuccess={handleSignup} />
             </div>
           </>
+        ) : showForgotPassword ? ( // Render ForgotPassword when showForgotPassword is true
+          <ForgotPassword onBack={() => setShowForgotPassword(false)} />
         ) : (
           <div className="min-h-screen flex flex-col">
             <div className="flex justify-between items-center p-4">
@@ -146,7 +146,8 @@ function App() {
                   application screening, keyword matching, and candidate management, ensuring efficiency.
                 </h2>
               </div>
-              <LoginForm onSwitch={() => setShowSignup(true)} onLoginSuccess={handleLogin} />
+              {/* Pass setShowForgotPassword to LoginForm */}
+              <LoginForm onSwitch={() => setShowSignup(true)} onLoginSuccess={handleLogin} onForgotPassword={() => setShowForgotPassword(true)} />
             </div>
           </div>
         )}

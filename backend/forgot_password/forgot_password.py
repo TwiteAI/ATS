@@ -4,8 +4,8 @@ from utility.utils import existing_user_checker
 from database.mysql_reader_and_writer import *
 from utility.security import *
 from utility.email_utils import *
-import os
-print(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASS"))
+# import os
+# print(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASS"))
 
 async def forgot_password_logic(forgot_password_body):
     passcode = generate_passcode()

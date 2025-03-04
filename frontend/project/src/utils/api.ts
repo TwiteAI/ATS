@@ -1,5 +1,19 @@
 import axios from 'axios';
 
+const API_BASE_URL = 'http://127.0.0.1:8000';
+
+export const sendPasscode = async (email: string): Promise<void> => {
+  await axios.post(`${API_BASE_URL}/forgot_password`, { email });
+};
+
+export const verifyPasscode = async (email: string, passcode: string): Promise<void> => {
+  await axios.post(`${API_BASE_URL}/verify_passcode`, { email, passcode });
+};
+
+export const resetUserPassword = async (email: string, password: string): Promise<void> => {
+  await axios.post(`${API_BASE_URL}/password_reset`, { email, password });
+};
+
 // Define types for login and signup
 interface LoginCredentials {
   email: string;
@@ -7,17 +21,14 @@ interface LoginCredentials {
 }
 
 interface SignupData {
-  username: string;  // Changed from 'name' to 'username' to match backend
+  username: string;
   email: string;
-  company_name?: string; // Optional as per backend schema
-  role: string; // Changed from 'job_title' to 'role' to match backend
-  phone?: string; // Optional field
+  company_name?: string;
+  role: string;
+  phone?: string;
   password: string;
-  confirm_password: string; // Kept this because backend validates it
+  confirm_password: string;
 }
-
-// Define API base URL (Change this to match your backend)
-const API_BASE_URL = 'http://localhost:8000'; // Removed extra "http://"
 
 /**
  * Login function
@@ -26,15 +37,13 @@ const API_BASE_URL = 'http://localhost:8000'; // Removed extra "http://"
  */
 export const login = async (credentials: LoginCredentials): Promise<any> => {
   try {
+    console.log("Sending login request:", credentials);
     const response = await axios.post(`${API_BASE_URL}/login`, credentials);
-    return response.data; // If login is successful
+    console.log("Login response:", response.data);
+    return response.data;
   } catch (error: any) {
     console.error('Login failed:', error.response?.data?.detail || error.message);
-    // Ensure meaningful errors are thrown
-    if (error.response) {
-      throw new Error(error.response.data.detail || 'Login failed. Please try again.');
-    }
-    throw new Error('Network error. Please check your connection.');
+    throw new Error(error.response?.data?.detail || 'Login failed. Please try again.');
   }
 };
 
@@ -45,35 +54,72 @@ export const login = async (credentials: LoginCredentials): Promise<any> => {
  */
 export const signup = async (userData: SignupData): Promise<any> => {
   try {
+    console.log("Sending signup request:", userData);
     const response = await axios.post(`${API_BASE_URL}/signup`, userData);
-    return response.data; // If signup is successful
+    console.log("Signup response:", response.data);
+    return response.data;
   } catch (error: any) {
     console.error('Signup failed:', error.response?.data?.detail || error.message);
-
-    // Ensure meaningful errors are thrown
-    if (error.response) {
-      throw new Error(error.response.data.detail || 'Signup failed. Please try again.');
-    }
-    throw new Error('Network error. Please check your connection.');
+    throw new Error(error.response?.data?.detail || 'Signup failed. Please try again.');
   }
 };
 
 /**
- * Send password reset instructions
- * @param email - User email address
- * @returns A promise resolving to password reset response
+ * Forgot Password API - Generates a 6-digit passcode and emails it to the user
+ * @param email - User's email address
+ * @returns A promise resolving to a response message
  */
-export const sendPasswordReset = async (email: string): Promise<any> => {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/password-reset`, { email });
-    return response.data; // If password reset is successful
-  } catch (error: any) {
-    console.error('Password reset failed:', error.response?.data?.detail || error.message);
+export const forgotPassword = async (email: string) => {
+  console.log("Sending forgot password request to API..."); // Debug Log
+  console.log("Email sent:", email); // Debug Log
 
-    // Ensure meaningful errors are thrown
-    if (error.response) {
-      throw new Error(error.response.data.detail || 'Password reset failed. Please try again.');
-    }
-    throw new Error('Network error. Please check your connection.');
+  try {
+      const response = await fetch(`${API_BASE_URL}/forgot_password`, {
+          method: "POST",
+          headers: {
+              "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email }),
+      });
+
+      console.log("Response Status:", response.status); // Debug Log
+
+      if (!response.ok) {
+          console.error("Failed request:", await response.text());
+          return null;
+      }
+
+      const data = await response.json();
+      console.log("API Response Data:", data); // Debug Log
+      return data;
+  } catch (error) {
+      console.error("Error in API Call:", error);
+      return null;
   }
 };
+
+/**
+ * Reset Password API - Resets the user's password with a passcode
+ * @param email - User's email
+ * @param passcode - 6-digit passcode received via email
+ * @param newPassword - New password
+ * @returns A promise resolving to a success message
+ */
+export const resetPassword = async (email: string, passcode: string, newPassword: string): Promise<any> => {
+  try {
+    console.log("Requesting password reset for email:", email);
+    
+    const response = await axios.put(`${API_BASE_URL}/reset_password`, {
+      email,
+      passcode,
+      new_password: newPassword // ✅ Corrected key from "password" to "new_password"
+    });
+
+    console.log("Reset password response:", response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Password reset failed:', error.response?.data?.detail || error.message);
+    throw new Error(error.response?.data?.detail || 'Password reset failed. Please try again.');
+  }
+};
+

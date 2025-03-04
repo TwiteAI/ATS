@@ -12,17 +12,19 @@ def reset_password_logic(reset_body):
     # Fetch stored passcode
     query = f"SELECT id, passcode, is_used FROM password_reset_codes WHERE email ='{email}' "
     result = mysql_connection_obj.reader(query)
-    logger.info({result})
+    logger.info(f'{result}')
 
     if not result:
         raise HTTPException(status_code=400, detail="Invalid email or passcode.")
     
     reset_id, stored_passcode, is_used = result[0]
 
-    # Validate passcode
-    if str(stored_passcode) != passcode or is_used:
-        raise HTTPException(status_code=400, detail="Invalid or expired passcode.")
 
+    # Validate passcode
+    if str(stored_passcode) != str(passcode) or is_used == 1:
+        logger.info(f"Stored Passcode: {stored_passcode}, Input Passcode: {passcode}, is_used: {is_used}")
+        raise HTTPException(status_code=400, detail="Invalid or expired passcode.")
+    
     # Hash the new password
     hashed_password = hash_password(new_password)
 
