@@ -1,123 +1,115 @@
-import { useState } from 'react';
+import React from 'react';
+import { Formik, Form, Field, ErrorMessage } from 'formik';
+import * as Yup from 'yup';
 import toast from 'react-hot-toast';
+import { signUp } from '../utils/auth';
 
 interface SignupFormProps {
   onSwitch: () => void;
-  onSignupSuccess: (userData: {
-    name: string;
-    email: string;
-    company_name: string;
-    job_title: string;
-    phone: string;
-    password: string;
-    confirm_password: string;
-  }) => Promise<Response>;
+  onSignupSuccess: () => void;
 }
 
+const SignupSchema = Yup.object().shape({
+  name: Yup.string().required('Name is required'),
+  email: Yup.string().email('Invalid email').required('Email is required'),
+  password: Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
+  confirmPassword: Yup.string()
+    .oneOf([Yup.ref('password')], 'Passwords must match')
+    .required('Confirm password is required'),
+});
+
 const SignupForm: React.FC<SignupFormProps> = ({ onSwitch, onSignupSuccess }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    company_name: '',
-    job_title: '',
-    phone: '',
-    password: '',
-    confirm_password: '',
-  });
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-    toast.dismiss();  // Remove any previous toasts
-
-    if (formData.password !== formData.confirm_password) {
-      setError('Passwords do not match!');
-      toast.error('Passwords do not match!');
-      setLoading(false);
-      return;
-    }
-    
-    try {
-      const response = await onSignupSuccess({
-        name: formData.name,
-        email: formData.email,
-        company_name: formData.company_name,
-        job_title: formData.job_title,
-        phone: formData.phone,
-        password: formData.password,
-        confirm_password: formData.confirm_password,
-      });
-
-      const responseData = await response.json();
-
-        // ✅ Handle different HTTP status codes properly
-        if (!response.ok) {
-          if (response.status === 406) {
-              setError(responseData.detail || "User already exists!");
-              toast.error(responseData.detail || "User already exists!");
-          } 
-          // ✅ Handle FastAPI validation errors (422 - Unprocessable Entity)
-          else if (response.status === 422 && responseData.detail) {
-              const errorMessages: string[] = responseData.detail.map((err: any) => err.msg); // Extract actual error messages
-              const formattedError = errorMessages.join(", "); // Combine errors into a single string
-
-              setError(formattedError); // Show errors inside the UI
-              errorMessages.forEach((msg: string) => toast.error(msg)); // ✅ Explicitly define 'msg' as a string
-          } 
-          else {
-              setError(responseData.detail || "Signup failed. Please try again.");
-              toast.error(responseData.detail || "Signup failed. Please try again.");
-          }
-      } else {
-          setSuccess("Signup successful!");
-          toast.success("Signup successful!");
-      }
-  } catch (error: any) {
-      setError(error.message || "Unknown error occurred");
-      toast.error(error.message || "Error signing up, please try again!");
-      console.error("Signup error:", error);
-  } finally {
-      setLoading(false);
-  }
-};
-
-
-
   return (
-    <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">Create an Account</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input type="text" name="name" placeholder="Full Name" onChange={handleChange} required className="input" />
-        <input type="email" name="email" placeholder="Email" onChange={handleChange} required className="input" />
-        <input type="text" name="company_name" placeholder="Company Name" onChange={handleChange} required className="input" />
-        <input type="text" name="job_title" placeholder="Job Title" onChange={handleChange} required className="input" />
-        <input type="tel" name="phone" placeholder="Phone Number" onChange={handleChange} required className="input" />
-        <input type="password" name="password" placeholder="Password" onChange={handleChange} required className="input" />
-        <input type="password" name="confirm_password" placeholder="Confirm Password" onChange={handleChange} required className="input" />
+    <div className="relative w-full h-screen flex items-center justify-center bg-cover bg-center" 
+         style={{ backgroundImage: "url('/path-to-your-background.jpg')" }}>  
 
-        <button type="submit" className="btn-primary w-full" disabled={loading}>
-          {loading ? 'Signing Up...' : 'Sign Up'}
-        </button>
-      </form>
+      {/* Dark Overlay */}
+      <div className="absolute inset-0 bg-black bg-opacity-60" />
 
-      {error && <p style={{ color: "red" }}>{error}</p>}   {/* ✅ Display backend error */}
-      {success && <p style={{ color: "green" }}>{success}</p>} {/* ✅ Display success */}
+      {/* Signup Box */}
+      <div className="relative bg-gray-800 bg-opacity-90 p-8 rounded-lg shadow-xl max-w-md w-full mx-auto">
+        <h2 className="text-2xl font-bold text-white mb-6 text-center">Create an Account</h2>
+        
+        <Formik
+          initialValues={{ name: '', email: '', password: '', confirmPassword: '' }}
+          validationSchema={SignupSchema}
+          onSubmit={async (values, { setSubmitting }) => {
+            try {
+              const success = await signUp(values.email, values.password, values.name);
+              
+              if (success) {
+                toast.success('Account created successfully!');
+                onSignupSuccess();
+              } else {
+                toast.error('Failed to create an account.');
+              }
+            } catch (error: any) {
+              toast.error(error.message || 'Signup failed. Please try again.');
+            } finally {
+              setSubmitting(false);
+            }
+          }}
+        >
+          {({ isSubmitting }) => (
+            <Form className="space-y-4">
+              <div>
+                <Field
+                  name="name"
+                  type="text"
+                  placeholder="Name"
+                  className="w-full px-4 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                />
+                <ErrorMessage name="name" component="div" className="text-red-500 text-sm mt-1" />
+              </div>
 
-      <p className="mt-4 text-gray-600">
-        Already have an account?{' '}
-        <button onClick={onSwitch} className="text-blue-600 font-medium hover:underline">Login</button>
-      </p>
+              <div>
+                <Field
+                  name="email"
+                  type="email"
+                  placeholder="Email"
+                  className="w-full px-4 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                />
+                <ErrorMessage name="email" component="div" className="text-red-500 text-sm mt-1" />
+              </div>
+
+              <div>
+                <Field
+                  name="password"
+                  type="password"
+                  placeholder="Password"
+                  className="w-full px-4 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                />
+                <ErrorMessage name="password" component="div" className="text-red-500 text-sm mt-1" />
+              </div>
+
+              <div>
+                <Field
+                  name="confirmPassword"
+                  type="password"
+                  placeholder="Confirm Password"
+                  className="w-full px-4 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                />
+                <ErrorMessage name="confirmPassword" component="div" className="text-red-500 text-sm mt-1" />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-cyan-500 text-white py-3 rounded-lg hover:bg-cyan-600 transition disabled:opacity-50"
+              >
+                {isSubmitting ? 'Signing up...' : 'Sign Up'}
+              </button>
+
+              <p className="text-center text-white">
+                Already have an account?{' '}
+                <button onClick={onSwitch} className="text-cyan-400 hover:text-cyan-300">
+                  Log in
+                </button>
+              </p>
+            </Form>
+          )}
+        </Formik>
+      </div>
     </div>
   );
 };

@@ -1,159 +1,113 @@
-import { useState } from 'react';
-import { CircuitBoard } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import LoginForm from './components/LoginForm';
 import SignupForm from './components/SignupForm';
-import ForgotPassword from './components/ForgotPassword'; // Import ForgotPassword component
+import ForgotPassword from './components/ForgotPassword';
 import Dashboard from './components/Dashboard';
+import HomePage from './components/HomePage';
 import Navbar from './components/Navbar';
 import { CandidateProvider } from './context/CandidateContext';
-import { login, signup } from './utils/api'; // Importing API functions
+import { getSession, logout } from './utils/auth';
+import toast from 'react-hot-toast';
 
 function App() {
-  const [showSignup, setShowSignup] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false); // Added state for Forgot Password
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showSignup, setShowSignup] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showHome, setShowHome] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate(); // ✅ Use `useNavigate` for redirection
 
-  // Handle user login
-  const handleLogin = async (credentials: { email: string; password: string }): Promise<Response> => {
-    try {
-      const response = await login(credentials);
-  
-      if (response.success) {
-        setIsAuthenticated(true);
-      } else {
-        console.error('Login failed:', response.message);
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        console.log("Checking authentication status...");
+        const session = await getSession(); // ✅ Decode token for session check
+        console.log("Session data:", session);
+
+        if (session && session.email) {
+          console.log("User is authenticated:", session.email);
+          setIsAuthenticated(true);
+          setShowHome(false);
+        } else {
+          console.log("No active session found");
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        toast.error('Authentication check failed. Please log in again.');
+      } finally {
+        setIsLoading(false);
       }
-  
-      return response;
+    };
+
+    checkAuth();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      console.log("Attempting to sign out...");
+      await logout();
+      console.log("User signed out successfully");
+      setIsAuthenticated(false);
+      setShowHome(true);
+      toast.success('Logged out successfully');
+      navigate('/'); // ✅ Redirect to Home after logout
     } catch (error) {
-      console.error('Login error:', error);
-      throw error;
+      console.error('Logout error:', error);
+      toast.error('Logout failed. Please try again.');
     }
   };
 
-  // Handle user signup
-  const handleSignup = async (userData: {
-    name: string;
-    email: string;
-    company_name: string;
-    job_title: string;
-    phone: string;
-    password: string;
-    confirm_password: string;
-  }) => {
-    try {
-      const response = await signup({
-        username: userData.name,
-        email: userData.email,
-        company_name: userData.company_name,
-        role: userData.job_title,
-        phone: userData.phone,
-        password: userData.password,
-        confirm_password: userData.confirm_password,
-      });
-  
-      if (response.success) {
-        setIsAuthenticated(true);
-      } else {
-        console.error('Signup failed:', response.message);
-      }
-  
-      return response;
-    } catch (error) {
-      console.error('Signup error:', error);
-      throw error;
-    }
-  };
-
-  if (isAuthenticated) {
+  if (isLoading) {
     return (
-      <CandidateProvider>
-        <div className="min-h-screen bg-[#020817] relative overflow-hidden">
-          <div
-            className="absolute inset-0 z-0 opacity-30"
-            style={{
-              backgroundImage:
-                "url('https://images.unsplash.com/photo-1557264322-b44d383a2906?auto=format&fit=crop&q=80')",
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              filter: 'blur(3px)',
-            }}
-          />
-          <div className="relative z-10">
-            <Navbar onLogout={() => setIsAuthenticated(false)} />
-            <Dashboard />
-          </div>
-        </div>
-        <Toaster position="top-right" />
-      </CandidateProvider>
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 to-gray-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#020817] relative overflow-hidden">
-      <div
-        className="absolute inset-0 z-0 opacity-30"
-        style={{
-          backgroundImage:
-            "url('https://images.unsplash.com/photo-1557264322-b44d383a2906?auto=format&fit=crop&q=80')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          filter: 'blur(3px)',
-        }}
-      />
+    <CandidateProvider>
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 to-gray-900">
+        <Navbar
+          isAuthenticated={isAuthenticated}
+          onLoginClick={() => {
+            setShowSignup(false);
+            setShowHome(false);
+          }}
+          onSignupClick={() => setShowSignup(true)}
+          onLogout={isAuthenticated ? handleLogout : undefined}
+        />
 
-      <div className="relative z-10">
-        {showSignup ? (
-          <>
-            <Navbar />
-            <div className="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-              <div className="text-white">
-                <div className="flex items-center gap-2 mb-6">
-                  <CircuitBoard className="h-12 w-12 text-cyan-400" />
-                  <h1 className="text-4xl font-bold tracking-wider">TWITE AI</h1>
-                </div>
-                <img
-                  src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80"
-                  alt="360 Recruitment Automation"
-                  className="rounded-lg shadow-xl mb-8 max-w-md"
-                />
-              </div>
-              <SignupForm onSwitch={() => setShowSignup(false)} onSignupSuccess={handleSignup} />
-            </div>
-          </>
-        ) : showForgotPassword ? ( // Render ForgotPassword when showForgotPassword is true
+        {isAuthenticated ? (
+          <Dashboard />
+        ) : showForgotPassword ? (
           <ForgotPassword onBack={() => setShowForgotPassword(false)} />
+        ) : showHome ? (
+          <HomePage onGetStarted={() => setShowSignup(true)} />
+        ) : showSignup ? (
+          <SignupForm
+            onSwitch={() => setShowSignup(false)}
+            onSignupSuccess={() => {
+              setIsAuthenticated(true);
+              navigate('/dashboard'); // ✅ Redirect after signup
+            }}
+          />
         ) : (
-          <div className="min-h-screen flex flex-col">
-            <div className="flex justify-between items-center p-4">
-              <div className="flex items-center gap-2">
-                <CircuitBoard className="h-8 w-8 text-cyan-400" />
-                <h1 className="text-3xl font-bold tracking-wider text-white">TWITE AI TECHNOLOGIES</h1>
-              </div>
-              <button
-                onClick={() => setShowSignup(true)}
-                className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition-colors flex items-center gap-2"
-              >
-                SIGN UP
-              </button>
-            </div>
-
-            <div className="flex-1 container mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-              <div className="text-white">
-                <h2 className="text-4xl font-bold mb-6 leading-tight">
-                  ATS - An Application Tracking System (ATS) simplifies recruitment by automating job
-                  application screening, keyword matching, and candidate management, ensuring efficiency.
-                </h2>
-              </div>
-              {/* Pass setShowForgotPassword to LoginForm */}
-              <LoginForm onSwitch={() => setShowSignup(true)} onLoginSuccess={handleLogin} onForgotPassword={() => setShowForgotPassword(true)} />
-            </div>
-          </div>
+          <LoginForm
+            onSwitch={() => setShowSignup(true)}
+            onForgotPassword={() => setShowForgotPassword(true)}
+            onLoginSuccess={() => {
+              setIsAuthenticated(true);
+              navigate('/dashboard'); // ✅ Redirect after login
+            }}
+          />
         )}
       </div>
       <Toaster position="top-right" />
-    </div>
+    </CandidateProvider>
   );
 }
 

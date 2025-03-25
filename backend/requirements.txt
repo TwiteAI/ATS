@@ -22,3 +22,6 @@ win32_setctime==1.2.0
 bcrypt
 passlib[bcrypt]
 aiosmtplib
+pyjwt
+python-dotenv
+python-jose

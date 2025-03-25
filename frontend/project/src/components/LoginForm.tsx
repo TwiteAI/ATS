@@ -1,77 +1,108 @@
-import { useState } from 'react';
+import React from 'react';
+import { Formik, Form, Field } from 'formik';
+import * as Yup from 'yup';
 import toast from 'react-hot-toast';
+import { login } from '../utils/auth';
 
 interface LoginFormProps {
   onSwitch: () => void;
-  onLoginSuccess: (credentials: { email: string; password: string }) => Promise<any>;
-  onForgotPassword: () => void; // Prop for Forgot Password navigation
+  onForgotPassword: () => void;
+  onLoginSuccess: () => void;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ onSwitch, onLoginSuccess, onForgotPassword }) => {
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+const LoginSchema = Yup.object().shape({
+  email: Yup.string().email('Invalid email').required('Email is required'),
+  password: Yup.string().required('Password is required'),
+});
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    toast.dismiss();
-
-    try {
-      await onLoginSuccess(formData);
-      toast.success('Login successful!');
-    } catch (error: any) {
-      setError(error.message);
-      toast.error(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+const LoginForm: React.FC<LoginFormProps> = ({ onSwitch, onForgotPassword, onLoginSuccess }) => {
   return (
-    <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">Login to Your Account</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
-          required
-          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+    <div className="relative w-full h-screen flex items-center justify-center bg-cover bg-center" 
+         style={{ backgroundImage: "url('/path-to-your-background.jpg')" }}>  
 
-        {error && <div className="text-red-500 text-sm">{error}</div>}
+      {/* Dark Overlay */}
+      <div className="absolute inset-0 bg-black bg-opacity-60" />
 
-        <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition" disabled={loading}>
-          {loading ? 'Logging In...' : 'Login'}
-        </button>
+      {/* Login Box */}
+      <div className="relative bg-gray-800 bg-opacity-90 p-8 rounded-lg shadow-xl max-w-md w-full mx-auto">
+        <h2 className="text-2xl font-bold text-white mb-6 text-center">Login to Your Account</h2>
+        
+        <Formik
+          initialValues={{ email: '', password: '' }}
+          validationSchema={LoginSchema}
+          onSubmit={async (values, { setSubmitting, setFieldError }) => {
+            try {
+              const success = await login(values.email, values.password);
+              
+              if (success) {
+                toast.success('Login successful!');
+                onLoginSuccess();
+              } else {
+                toast.error('Login failed. Please check your credentials.');
+                setFieldError('password', 'Invalid email or password');
+              }
+            } catch (error) {
+              toast.error('Login failed. Please try again.');
+              setFieldError('password', 'Invalid email or password');
+            } finally {
+              setSubmitting(false);
+            }
+          }}
+        >
+          {({ errors, touched, isSubmitting }) => (
+            <Form className="space-y-6">
+              <div>
+                <Field
+                  name="email"
+                  type="email"
+                  placeholder="Email"
+                  className="w-full px-4 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                />
+                {errors.email && touched.email && (
+                  <div className="text-red-500 text-sm mt-1">{errors.email}</div>
+                )}
+              </div>
 
-        {/* Navigate to Forgot Password Page */}
-        <button type="button" onClick={onForgotPassword} className="text-blue-600 font-medium hover:underline mt-2">
-          Forgot Password?
-        </button>
-      </form>
+              <div>
+                <Field
+                  name="password"
+                  type="password"
+                  placeholder="Password"
+                  className="w-full px-4 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                />
+                {errors.password && touched.password && (
+                  <div className="text-red-500 text-sm mt-1">{errors.password}</div>
+                )}
+              </div>
 
-      <p className="mt-4 text-gray-600">
-        Don't have an account?{' '}
-        <button onClick={onSwitch} className="text-blue-600 font-medium hover:underline">Sign Up</button>
-      </p>
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  className="text-cyan-400 hover:text-cyan-300"
+                  onClick={onForgotPassword}
+                >
+                  Forgot password?
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-cyan-500 text-white py-3 rounded-lg hover:bg-cyan-600 transition disabled:opacity-50"
+              >
+                {isSubmitting ? 'Logging in...' : 'Log in'}
+              </button>
+
+              <p className="text-center text-white">
+                Don't have an account?{' '}
+                <button onClick={onSwitch} className="text-cyan-400 hover:text-cyan-300">
+                  Sign up
+                </button>
+              </p>
+            </Form>
+          )}
+        </Formik>
+      </div>
     </div>
   );
 };

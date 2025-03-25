@@ -1,89 +1,70 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import axios from 'axios';
 import { Candidate } from '../types/candidate';
-import toast from 'react-hot-toast';
+import { retrieveCandidates, createCandidate, deleteCandidate as deleteCandidateApi, updateCandidate as updateCandidateApi } from '../utils/api';
 
-interface CandidateContextType {
+interface CandidateContextProps {
   candidates: Candidate[];
   loading: boolean;
-  fetchCandidates: (search?: string) => Promise<void>;
-  addCandidate: (candidate: Omit<Candidate, 'id'>) => Promise<void>;
-  updateCandidate: (id: number, candidate: Omit<Candidate, 'id'>) => Promise<void>;
+  fetchCandidates: () => Promise<void>;
+  addCandidate: (candidate: Candidate) => Promise<void>;
+  updateCandidate: (id: number, candidate: Candidate) => Promise<void>;
   deleteCandidate: (id: number) => Promise<void>;
 }
 
-const CandidateContext = createContext<CandidateContextType | undefined>(undefined);
+const CandidateContext = createContext<CandidateContextProps | undefined>(undefined);
 
-export const CandidateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const CandidateProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const API_URL = 'http://localhost:8080/api/candidates';
-
-  const fetchCandidates = useCallback(async (search?: string) => {
+  // Fetch all candidates
+  const fetchCandidates = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await axios.get(API_URL + (search ? `?search=${search}` : ''));
-      setCandidates(response.data);
+      const data = await retrieveCandidates();
+      setCandidates(data);
     } catch (error) {
-      toast.error('Failed to fetch candidates');
+      console.error('Error fetching candidates:', error);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const addCandidate = async (candidate: Omit<Candidate, 'id'>) => {
+  // Add a new candidate
+  const addCandidate = async (candidate: Candidate) => {
     try {
-      setLoading(true);
-      await axios.post(API_URL, candidate);
-      toast.success('Candidate added successfully');
-      await fetchCandidates();
+      const newCandidate = await createCandidate(candidate);
+      setCandidates((prev) => [...prev, newCandidate]);
     } catch (error) {
-      toast.error('Failed to add candidate');
-      throw error;
-    } finally {
-      setLoading(false);
+      console.error('Error adding candidate:', error);
     }
   };
 
-  const updateCandidate = async (id: number, candidate: Omit<Candidate, 'id'>) => {
+  // Update an existing candidate
+  const updateCandidate = async (id: number, candidate: Candidate) => {
     try {
-      setLoading(true);
-      await axios.put(`${API_URL}/${id}`, candidate);
-      toast.success('Candidate updated successfully');
-      await fetchCandidates();
+      const updatedCandidate = await updateCandidateApi(id, candidate);
+      setCandidates((prev) =>
+        prev.map((c) => (c.id === id ? updatedCandidate : c))
+      );
     } catch (error) {
-      toast.error('Failed to update candidate');
-      throw error;
-    } finally {
-      setLoading(false);
+      console.error('Error updating candidate:', error);
     }
   };
 
+  // Delete a candidate
   const deleteCandidate = async (id: number) => {
     try {
-      setLoading(true);
-      await axios.delete(`${API_URL}/${id}`);
-      toast.success('Candidate deleted successfully');
-      await fetchCandidates();
+      await deleteCandidateApi(id);
+      setCandidates((prev) => prev.filter((candidate) => candidate.id !== id));
     } catch (error) {
-      toast.error('Failed to delete candidate');
-      throw error;
-    } finally {
-      setLoading(false);
+      console.error('Error deleting candidate:', error);
     }
   };
 
   return (
     <CandidateContext.Provider
-      value={{
-        candidates,
-        loading,
-        fetchCandidates,
-        addCandidate,
-        updateCandidate,
-        deleteCandidate,
-      }}
+      value={{ candidates, loading, fetchCandidates, addCandidate, updateCandidate, deleteCandidate }}
     >
       {children}
     </CandidateContext.Provider>

@@ -1,6 +1,6 @@
 from fastapi import FastAPI,HTTPException
 from pydantic import BaseModel,Field,EmailStr,field_validator,model_validator
-from typing import Optional
+from typing import List,Optional
 
 class SignupBody(BaseModel):
     username: str = Field(..., description="Username is required")
@@ -41,11 +41,12 @@ class OptionalFilters(BaseModel):
     role:Optional[str]
 
 class CandidateSchema(BaseModel):
-    id: int
     username: str
     email: str
-    role: str
-    phone:Optional[str]
+    phone: str
+    skills: str
+    experience: int
+
 
 class UpdateBody(BaseModel):
     username:Optional[str]=""
@@ -61,3 +62,16 @@ class ResetPasswordBody(BaseModel):
     email:EmailStr
     passcode:str
     new_password:str = Field(..., min_length=8, max_length=20, description="Password must be 8-20 characters long")
+
+class CandidateBody(BaseModel):
+    name:str
+    email:EmailStr
+    phone:Optional[str]=""
+    skills:List[str]
+    experience:Optional[int]=0
+
+    @field_validator("phone")
+    def validate_phone(cls, value: Optional[str]) -> Optional[str]:
+        if value and (not value.isdigit() or len(value) != 10):
+            raise HTTPException(status_code=400, detail="Phone number must be exactly 10 digits.")
+        return value

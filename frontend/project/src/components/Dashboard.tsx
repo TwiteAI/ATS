@@ -1,22 +1,53 @@
-import React, { useState, useEffect } from 'react';
-import { useCandidates } from '../context/CandidateContext';
-import SearchBar from './SearchBar';
-import CandidateForm from './CandidateForm';
-import DeleteConfirmation from './DeleteConfirmation';
-import { Pencil, Trash2, Plus } from 'lucide-react';
-import { Candidate } from '../types/candidate';
+import React, { useState, useEffect } from "react";
+import { useCandidates } from "../context/CandidateContext";
+import SearchBar from "./SearchBar";
+import CandidateForm from "./CandidateForm";
+import DeleteConfirmation from "./DeleteConfirmation";
+import CandidateList from "./CandidateList"; // ✅ Import CandidateList
+import { Plus } from "lucide-react";
+import { Candidate } from "../types/candidate";
+import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom"; // ✅ Import useNavigate
 
 const Dashboard: React.FC = () => {
-  const { candidates, loading, fetchCandidates, addCandidate, updateCandidate, deleteCandidate } = useCandidates();
+  const navigate = useNavigate(); // ✅ Move inside component body
+
+  const {
+    candidates,
+    loading,
+    fetchCandidates,
+    addCandidate,
+    updateCandidate,
+    deleteCandidate,
+  } = useCandidates();
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   useEffect(() => {
-    fetchCandidates();
-  }, [fetchCandidates]);
-
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("No token found, redirecting...");
+      navigate("/login");
+      return;
+    }
+  
+    const loadCandidates = async () => {
+      try {
+        await fetchCandidates();
+        setFetchError(null);
+      } catch (error: any) {
+        console.error("Error fetching candidates:", error);
+        setFetchError(error.message || "Failed to fetch candidates");
+      }
+    };
+    loadCandidates();
+  }, []); // Run only once on mount
+  
   const handleEdit = (candidate: Candidate) => {
     setSelectedCandidate(candidate);
     setShowEditForm(true);
@@ -28,102 +59,86 @@ const Dashboard: React.FC = () => {
   };
 
   const confirmDelete = async () => {
-    if (selectedCandidate?.id) {
-      await deleteCandidate(selectedCandidate.id);
-      setShowDeleteConfirm(false);
+    if (selectedCandidate?.id !== undefined) {
+      try {
+        await deleteCandidate(selectedCandidate.id);
+        setShowDeleteConfirm(false);
+        setSelectedCandidate(null);
+        toast.success("Candidate deleted successfully");
+      } catch (error) {
+        console.error("Error deleting candidate:", error);
+        toast.error("Failed to delete candidate");
+      }
+    } else {
+      toast.error("No candidate selected for deletion");
     }
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-lg p-6 shadow-xl">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-white">Candidate Management</h1>
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="bg-cyan-500 text-white px-4 py-2 rounded-lg hover:bg-cyan-600 transition-colors flex items-center gap-2"
-          >
-            <Plus size={20} />
-            Add New Candidate
-          </button>
-        </div>
-
-        <div className="mb-6">
-          <SearchBar />
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-800">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Phone</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Skills</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Experience</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-gray-900 bg-opacity-50 divide-y divide-gray-700">
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-gray-300">
-                    Loading...
-                  </td>
-                </tr>
-              ) : candidates.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-gray-300">
-                    No candidates found
-                  </td>
-                </tr>
-              ) : (
-                candidates.map((candidate) => (
-                  <tr key={candidate.id} className="hover:bg-gray-800">
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-300">{candidate.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-300">{candidate.email}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-300">{candidate.phone}</td>
-                    <td className="px-6 py-4 text-gray-300">{candidate.skills.join(', ')}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-300">{candidate.experience} years</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-300">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleEdit(candidate)}
-                          className="text-blue-400 hover:text-blue-300"
-                        >
-                          <Pencil size={20} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(candidate)}
-                          className="text-red-400 hover:text-red-300"
-                        >
-                          <Trash2 size={20} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+      {/* Navigation Tabs */}
+      <div className="flex border-b border-gray-700 mb-6">
+        <button
+          className={`px-4 py-2 font-medium ${
+            activeTab === "dashboard"
+              ? "text-cyan-400 border-b-2 border-cyan-400"
+              : "text-gray-400 hover:text-white"
+          }`}
+          onClick={() => setActiveTab("dashboard")}
+        >
+          Dashboard
+        </button>
+        <button
+          className={`px-4 py-2 font-medium ${
+            activeTab === "candidates"
+              ? "text-cyan-400 border-b-2 border-cyan-400"
+              : "text-gray-400 hover:text-white"
+          }`}
+          onClick={() => setActiveTab("candidates")}
+        >
+          Candidates
+        </button>
       </div>
 
-      {showAddForm && (
-        <CandidateForm
-          onSubmit={addCandidate}
-          onClose={() => setShowAddForm(false)}
-        />
+      {activeTab === "dashboard" ? (
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-6">Dashboard</h1>
+          <p className="text-gray-400">Welcome back, Twite AI</p>
+        </div>
+      ) : (
+        <div className="bg-gray-800 rounded-lg p-6 shadow-xl">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-white">Candidate Management</h1>
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="bg-cyan-500 text-white px-4 py-2 rounded-lg hover:bg-cyan-600 transition-colors flex items-center gap-2"
+            >
+              <Plus size={20} />
+              Add New Candidate
+            </button>
+          </div>
+          <SearchBar />
+
+          {/* ✅ Use CandidateList component */}
+          <CandidateList
+            candidates={candidates}
+            loading={loading}
+            error={fetchError}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        </div>
       )}
+
+      {showAddForm && <CandidateForm onSubmit={addCandidate} onClose={() => setShowAddForm(false)} />}
 
       {showEditForm && selectedCandidate && (
         <CandidateForm
           initialValues={selectedCandidate}
-          onSubmit={(values) => {
-            if (selectedCandidate.id) {
-              return updateCandidate(selectedCandidate.id, values);
+          onSubmit={async (values) => {
+            if (selectedCandidate?.id !== undefined) {
+              await updateCandidate(selectedCandidate.id, values);
             }
-            return Promise.reject('No candidate ID');
           }}
           onClose={() => setShowEditForm(false)}
         />
@@ -131,6 +146,8 @@ const Dashboard: React.FC = () => {
 
       {showDeleteConfirm && (
         <DeleteConfirmation
+          title="Delete Candidate"
+          message={`Are you sure you want to delete ${selectedCandidate?.name}? This action cannot be undone.`}
           onConfirm={confirmDelete}
           onCancel={() => setShowDeleteConfirm(false)}
         />
