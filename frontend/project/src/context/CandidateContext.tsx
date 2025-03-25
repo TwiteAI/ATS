@@ -1,70 +1,118 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Candidate } from '../types/candidate';
-import { retrieveCandidates, createCandidate, deleteCandidate as deleteCandidateApi, updateCandidate as updateCandidateApi } from '../utils/api';
+import toast from 'react-hot-toast';
+import { supabase } from '../utils/supabase';
 
-interface CandidateContextProps {
+interface CandidateContextType {
   candidates: Candidate[];
   loading: boolean;
-  fetchCandidates: () => Promise<void>;
-  addCandidate: (candidate: Candidate) => Promise<void>;
-  updateCandidate: (id: number, candidate: Candidate) => Promise<void>;
+  fetchCandidates: (search?: string) => Promise<void>;
+  addCandidate: (candidate: Omit<Candidate, 'id'>) => Promise<void>;
+  updateCandidate: (id: number, candidate: Omit<Candidate, 'id'>) => Promise<void>;
   deleteCandidate: (id: number) => Promise<void>;
 }
 
-const CandidateContext = createContext<CandidateContextProps | undefined>(undefined);
+const CandidateContext = createContext<CandidateContextType | undefined>(undefined);
 
-export const CandidateProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
+export const CandidateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
 
-  // Fetch all candidates
-  const fetchCandidates = useCallback(async () => {
-    setLoading(true);
+  const fetchCandidates = useCallback(async (search?: string) => {
     try {
-      const data = await retrieveCandidates();
-      setCandidates(data);
-    } catch (error) {
+      setLoading(true);
+      let query = supabase.from('candidates').select('*');
+
+      if (search) {
+        query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%,skills.cs.{${search}}`);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      setCandidates(data || []);
+    } catch (error: any) {
       console.error('Error fetching candidates:', error);
+      toast.error('Failed to fetch candidates: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Add a new candidate
-  const addCandidate = async (candidate: Candidate) => {
+  const addCandidate = async (candidate: Omit<Candidate, 'id'>) => {
     try {
-      const newCandidate = await createCandidate(candidate);
-      setCandidates((prev) => [...prev, newCandidate]);
-    } catch (error) {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('candidates')
+        .insert([candidate])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Candidate added successfully');
+      await fetchCandidates();
+    } catch (error: any) {
       console.error('Error adding candidate:', error);
+      toast.error('Failed to add candidate: ' + (error.message || 'Unknown error'));
+      throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Update an existing candidate
-  const updateCandidate = async (id: number, candidate: Candidate) => {
+  const updateCandidate = async (id: number, candidate: Omit<Candidate, 'id'>) => {
     try {
-      const updatedCandidate = await updateCandidateApi(id, candidate);
-      setCandidates((prev) =>
-        prev.map((c) => (c.id === id ? updatedCandidate : c))
-      );
-    } catch (error) {
+      setLoading(true);
+      const { error } = await supabase
+        .from('candidates')
+        .update(candidate)
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success('Candidate updated successfully');
+      await fetchCandidates();
+    } catch (error: any) {
       console.error('Error updating candidate:', error);
+      toast.error('Failed to update candidate: ' + (error.message || 'Unknown error'));
+      throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Delete a candidate
   const deleteCandidate = async (id: number) => {
     try {
-      await deleteCandidateApi(id);
-      setCandidates((prev) => prev.filter((candidate) => candidate.id !== id));
-    } catch (error) {
+      setLoading(true);
+      const { error } = await supabase
+        .from('candidates')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success('Candidate deleted successfully');
+      await fetchCandidates();
+    } catch (error: any) {
       console.error('Error deleting candidate:', error);
+      toast.error('Failed to delete candidate: ' + (error.message || 'Unknown error'));
+      throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <CandidateContext.Provider
-      value={{ candidates, loading, fetchCandidates, addCandidate, updateCandidate, deleteCandidate }}
+      value={{
+        candidates,
+        loading,
+        fetchCandidates,
+        addCandidate,
+        updateCandidate,
+        deleteCandidate,
+      }}
     >
       {children}
     </CandidateContext.Provider>
