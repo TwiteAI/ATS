@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.bg-tech-grid {
+  background-size: 50px 50px;
+  background-image: 
+    linear-gradient(to right, rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+  transform-origin: center;
+  animation: gridPulse 4s ease-in-out infinite;
+}
+
+.particle-effect {
+  background-image: radial-gradient(
+    circle,
+    rgba(59, 130, 246, 0.4) 1px,
+    transparent 1px
+  );
+  background-size: 60px 60px;
+  animation: particleDrift 20s linear infinite;
+}
+
+.bg-radial-overlay {
+  background: radial-gradient(
+    circle at 50% 50%,
+    transparent 0%,
+    rgba(30, 58, 138, 0.3) 100%
+  );
+}
+
+/* Glowing text effects */
+.text-glow {
+  color: #00f7ff;
+  text-shadow: 0 0 10px rgba(0, 247, 255, 0.5),
+               0 0 20px rgba(0, 247, 255, 0.3),
+               0 0 30px rgba(0, 247, 255, 0.1);
+}
+
+.text-glow-purple {
+  color: #e0aaff;
+  text-shadow: 0 0 10px rgba(224, 170, 255, 0.5),
+               0 0 20px rgba(224, 170, 255, 0.3),
+               0 0 30px rgba(224, 170, 255, 0.1);
+}
+
+.text-glow-blue {
+  color: #60a5fa;
+  text-shadow: 0 0 10px rgba(96, 165, 250, 0.5),
+               0 0 20px rgba(96, 165, 250, 0.3),
+               0 0 30px rgba(96, 165, 250, 0.1);
+}
+
+@keyframes gridPulse {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes particleDrift {
+  0% {
+    transform: translateY(0) translateX(0);
+  }
+  33% {
+    transform: translateY(-10px) translateX(10px);
+  }
+  66% {
+    transform: translateY(10px) translateX(-10px);
+  }
+  100% {
+    transform: translateY(0) translateX(0);
+  }
+}
+
+/* Adjust content background for better readability */
+.bg-white {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.dark .bg-white {
+  background-color: rgba(30, 58, 138, 0.3) !important;
+}
+
+/* Custom text colors */
+.text-primary {
+  color: #00f7ff;
+}
+
+.text-secondary {
+  color: #e0aaff;
+}
+
+.text-accent {
+  color: #60a5fa;
+}
